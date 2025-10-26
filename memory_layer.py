@@ -237,7 +237,7 @@ class MemoryNote:
 class HybridRetriever:
     """Hybrid retrieval system combining BM25 and semantic search."""
     
-    def __init__(self, model_name: str = 'all-MiniLM-L6-v2', alpha: float = 0.5):
+    def __init__(self, model_name: str = 'all-MiniLM-L6-v2', alpha: float = 0.25, beta: float = 0.25):
         """Initialize the hybrid retriever.
         
         Args:
@@ -246,6 +246,7 @@ class HybridRetriever:
         """
         self.model = SentenceTransformer(model_name)
         self.alpha = alpha
+        self.beta = beta
         self.bm25 = None
         self.corpus = []
         self.embeddings = None
@@ -376,9 +377,17 @@ class HybridRetriever:
         # Get semantic scores
         query_embedding = self.model.encode([query])[0]
         semantic_scores = cosine_similarity([query_embedding], self.embeddings)[0]
+
+        # Get centrality scores (links per node)
+        centrality = np.array([len(m.links) for m in self.memories.values()], dtype=float)
+
+        # Normalize centrality scores if they exist
+        max_c = centrality.max() if centrality.size else 0.0
+        if max_c > 0:
+            centrality = centrality / max_c
         
         # Combine scores
-        hybrid_scores = self.alpha * bm25_scores + (1 - self.alpha) * semantic_scores
+        hybrid_scores = self.alpha * bm25_scores + (1 - self.alpha - beta) * semantic_scores + beta * centrality
         
         # Get top k indices
         k = min(k, len(self.corpus))
@@ -506,7 +515,7 @@ class AgenticMemorySystem:
                  evo_threshold: int = 100,
                  api_key: Optional[str] = None):
         self.memories = {}  # id -> MemoryNote
-        self.retriever = SimpleEmbeddingRetriever(model_name)
+        self.retriever = HybridRetriever(model_name, alpha=0.5, beta=0.1)
         self.llm_controller = LLMController(llm_backend, llm_model, api_key)
         self.evolution_system_prompt = '''
                                 You are an AI memory evolution agent responsible for managing and evolving a knowledge base.
