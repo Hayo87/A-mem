@@ -679,7 +679,7 @@ class AgenticMemorySystem:
             
         # Get indices of related memories
         # indices = self.retriever.retrieve(query_note.content, k)
-        indices = self.retriever.search(query, k)
+        indices = self.retriever.retrieve(query, k)
         
         # Convert to list of memories
         all_memories = list(self.memories.values())
@@ -697,7 +697,7 @@ class AgenticMemorySystem:
             
         # Get indices of related memories
         # indices = self.retriever.retrieve(query_note.content, k)
-        indices = self.retriever.search(query, k)
+        indices = self.retriever.retrieve(query, k)
         
         # Convert to list of memories
         all_memories = list(self.memories.values())
